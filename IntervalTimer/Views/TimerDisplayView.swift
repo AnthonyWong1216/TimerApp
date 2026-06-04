@@ -12,10 +12,17 @@ import SwiftUI
 struct TimerDisplayView: View {
     @ObservedObject var timerEngine: TimerEngine
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     
     // MARK: - State
     @State private var showControls = true
     @State private var controlsTimer: Timer?
+    
+    // MARK: - Computed Properties for Layout
+    private var isLandscape: Bool {
+        verticalSizeClass == .compact
+    }
     
     // MARK: - Body
     
@@ -91,51 +98,64 @@ struct TimerDisplayView: View {
     }
     
     private var mainTimerView: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: isLandscape ? 16 : 24) {
             // Stage type and name
             if let stage = timerEngine.session?.currentStage {
                 VStack(spacing: 8) {
                     // Stage type icon
                     Image(systemName: stage.type.iconName)
-                        .font(.system(size: 40))
+                        .font(.system(size: isLandscape ? 30 : 40))
                         .foregroundColor(stage.colorTheme.color)
                     
                     // Stage name
                     Text(stage.name)
-                        .font(.system(size: 32, weight: .bold))
+                        .font(.system(size: isLandscape ? 24 : 32, weight: .bold))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                 }
             }
             
-            // Time remaining - Large display
-            if let session = timerEngine.session {
-                Text(session.formattedTimeRemaining)
-                    .font(.system(size: 120, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-                    .monospacedDigit()
-                    .minimumScaleFactor(0.5)
-                    .lineLimit(1)
-            }
-            
-            // Progress circle
+            // Time remaining with progress circle and play/pause button
             if let session = timerEngine.session {
                 ZStack {
-                    // Background circle
-                    Circle()
-                        .stroke(Color.white.opacity(0.2), lineWidth: 8)
-                        .frame(width: 200, height: 200)
-                    
                     // Progress circle
-                    Circle()
-                        .trim(from: 0, to: session.stageProgress)
-                        .stroke(
-                            session.currentStage?.colorTheme.color ?? .white,
-                            style: StrokeStyle(lineWidth: 8, lineCap: .round)
-                        )
-                        .frame(width: 200, height: 200)
-                        .rotationEffect(.degrees(-90))
-                        .animation(.linear(duration: 0.1), value: session.stageProgress)
+                    ZStack {
+                        // Background circle
+                        Circle()
+                            .stroke(Color.white.opacity(0.2), lineWidth: 8)
+                            .frame(width: circleSize, height: circleSize)
+                        
+                        // Progress circle
+                        Circle()
+                            .trim(from: 0, to: session.stageProgress)
+                            .stroke(
+                                session.currentStage?.colorTheme.color ?? .white,
+                                style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                            )
+                            .frame(width: circleSize, height: circleSize)
+                            .rotationEffect(.degrees(-90))
+                            .animation(.linear(duration: 0.1), value: session.stageProgress)
+                    }
+                    
+                    // Time and play/pause button inside circle
+                    VStack(spacing: 12) {
+                        // Time remaining - Large display
+                        Text(session.formattedTimeRemaining)
+                            .font(.system(size: timeFont, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                            .monospacedDigit()
+                            .minimumScaleFactor(0.5)
+                            .lineLimit(1)
+                        
+                        // Play/Pause button inside circle
+                        Button(action: {
+                            togglePlayPause()
+                        }) {
+                            Image(systemName: playPauseIcon)
+                                .font(.system(size: isLandscape ? 40 : 50))
+                                .foregroundColor(.white)
+                        }
+                    }
                 }
             }
             
@@ -161,6 +181,15 @@ struct TimerDisplayView: View {
         }
     }
     
+    // Circle and font sizes based on orientation
+    private var circleSize: CGFloat {
+        isLandscape ? 180 : 240
+    }
+    
+    private var timeFont: CGFloat {
+        isLandscape ? 80 : 100
+    }
+    
     private var controlsView: some View {
         HStack(spacing: 40) {
             // Skip button
@@ -176,18 +205,7 @@ struct TimerDisplayView: View {
                 .foregroundColor(.white.opacity(0.8))
             }
             
-            // Play/Pause button
-            Button(action: {
-                togglePlayPause()
-            }) {
-                VStack(spacing: 8) {
-                    Image(systemName: playPauseIcon)
-                        .font(.system(size: 60))
-                    Text(playPauseText)
-                        .font(.caption)
-                }
-                .foregroundColor(.white)
-            }
+            Spacer()
             
             // Reset button
             Button(action: {
@@ -202,6 +220,7 @@ struct TimerDisplayView: View {
                 .foregroundColor(.white.opacity(0.8))
             }
         }
+        .padding(.horizontal, 60)
         .padding(.bottom, 40)
     }
     
