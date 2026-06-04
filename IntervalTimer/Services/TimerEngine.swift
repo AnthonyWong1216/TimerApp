@@ -350,7 +350,7 @@ class TimerEngine: ObservableObject {
     /// 恢復保存的會話狀態
     private func restoreSessionState() {
         guard let data = UserDefaults.standard.data(forKey: "savedSessionState"),
-              let state = try? JSONDecoder().decode(SessionState.self, from: data) else {
+              let _ = try? JSONDecoder().decode(SessionState.self, from: data) else {
             return
         }
         
