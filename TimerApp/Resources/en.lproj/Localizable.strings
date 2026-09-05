@@ -1,0 +1,162 @@
+/* 
+  Localizable.strings (English)
+  IntervalTimer
+  
+  Created by Bob on 2026-06-04.
+*/
+
+// MARK: - Stage Types
+"stage.type.workout" = "Workout";
+"stage.type.rest" = "Rest";
+"stage.type.prepare" = "Prepare";
+
+// MARK: - Colors
+"color.red" = "Red";
+"color.green" = "Green";
+"color.yellow" = "Yellow";
+"color.blue" = "Blue";
+"color.purple" = "Purple";
+"color.orange" = "Orange";
+"color.pink" = "Pink";
+"color.teal" = "Teal";
+
+// MARK: - Languages
+"language.english" = "English";
+"language.chinese" = "繁體中文";
+
+// MARK: - Home View
+"home.title" = "Interval Timer";
+"home.subtitle" = "Custom Interval Timer";
+"home.quick_start" = "Quick Start";
+"home.my_workouts" = "My Routines";
+"home.routine_hint" = "Long press a routine to edit or delete it";
+"home.create_new" = "Create New";
+"home.edit" = "Edit";
+"home.delete" = "Delete";
+"home.sample_workouts" = "Sample Workouts";
+"home.sample_subtitle" = "Try these pre-configured workouts";
+"home.empty_state" = "No workouts yet";
+"home.empty_subtitle" = "Create your first workout or try a sample";
+"home.stages" = "stages";
+"home.rounds" = "rounds";
+"home.total_time" = "Total";
+
+// MARK: - Timer View
+"timer.next" = "Next";
+"timer.skip" = "Skip";
+"timer.pause" = "Pause";
+"timer.resume" = "Resume";
+"timer.start" = "Start";
+"timer.reset" = "Reset";
+"timer.font.rounded" = "Rounded";
+"timer.font.monospaced" = "Monospaced";
+"timer.font.serif" = "Serif";
+"timer.font.cyber" = "Cyber";
+"timer.progress.circle" = "Circle";
+"timer.progress.bar" = "Progress Bar";
+"timer.stop_title" = "Stop workout?";
+"timer.stop" = "Stop";
+"timer.stop_message" = "Your current workout progress will be lost.";
+"preview.start" = "Start Routine";
+"completion.title" = "Workout Complete!";
+"completion.repeat" = "Repeat Routine";
+"completion.done" = "Done";
+
+// MARK: - Configuration Editor
+"editor.name" = "Workout Name";
+"editor.rounds" = "Rounds";
+"editor.skip_last_rest" = "Skip Last Rest";
+"editor.basic_info" = "Basic Information";
+"editor.stages" = "Stages";
+"editor.add_stage" = "Add Stage";
+"editor.new_workout" = "New Workout";
+"editor.edit_workout" = "Edit Workout";
+"editor.cancel" = "Cancel";
+"editor.save" = "Save";
+"editor.total_duration" = "Total Duration";
+"editor.single_run" = "Single Run";
+"editor.loop_run" = "Loop Run %d times";
+"editor.add_single" = "Add Single Run";
+"editor.add_loop" = "Add Loop Run";
+"editor.add_loop_after" = "Add Loop After This";
+"editor.loop_position" = "Loop %d — run %d times";
+"editor.single_position" = "Single Run %d";
+"editor.end_loop" = "End of Loop %d";
+"editor.end_single" = "End Single Run";
+"editor.delete_group" = "Delete this group";
+"editor.empty_group" = "No stages in this group yet";
+"editor.group_name_label" = "Name";
+"editor.group_name_placeholder" = "Workout name (for example: Plank 3 sets)";
+"editor.routine_name" = "Routine Name";
+"editor.routine_name_placeholder" = "Routine Name";
+"editor.insert_stage" = "Insert stage before this stage";
+
+// MARK: - Stage Editor
+"stage.name" = "Stage Name";
+"stage.type" = "Type";
+"stage.color" = "Color";
+"stage.duration" = "Duration";
+"stage.preview" = "Preview";
+"stage.new" = "New Stage";
+"stage.edit" = "Edit Stage";
+"stage.cancel" = "Cancel";
+"stage.save" = "Save";
+
+// MARK: - Duration
+"duration.minutes" = "min";
+"duration.seconds" = "sec";
+"duration.quick_select" = "Quick Select";
+"duration.custom" = "Custom Duration";
+"duration.preset.30_seconds" = "30 sec";
+"duration.preset.1_minute" = "1 min";
+"duration.preset.2_minutes" = "2 min";
+"duration.preset.3_minutes" = "3 min";
+"duration.preset.4_minutes" = "4 min";
+"duration.preset.5_minutes" = "5 min";
+
+// MARK: - Settings
+"settings.title" = "Settings";
+"settings.done" = "Done";
+"settings.audio" = "Audio";
+"settings.voice_enabled" = "Voice Announcements";
+"settings.sound_enabled" = "Sound Effects";
+"settings.volume" = "Volume";
+"settings.language" = "Language";
+"settings.audio_footer" = "Configure voice announcements and sound effects";
+"settings.display" = "Display";
+"settings.keep_screen_on" = "Keep Screen On";
+"settings.dark_mode" = "Dark Mode";
+"settings.timer_font" = "Timer Number Font";
+"settings.timer_progress" = "Countdown Style";
+"settings.display_footer" = "Prevent screen from dimming during workout";
+"settings.notifications_header" = "Notifications";
+"settings.notifications" = "Notifications";
+"settings.enable" = "Enable";
+"settings.notifications_footer" = "Receive notifications for stage changes";
+"settings.about" = "About";
+"settings.version" = "Version";
+"settings.support" = "Support";
+"settings.privacy" = "Privacy Policy";
+"settings.links_coming_soon" = "Support and privacy-policy links will be available before the App Store release.";
+
+// MARK: - Voice Announcements
+"voice.resume" = "Resume";
+"voice.workout_complete" = "Workout complete! Great job!";
+
+// MARK: - Notifications
+"notification.stage_change.title" = "Stage Change";
+"notification.stage_change.body" = "Next: %@";
+"notification.complete.title" = "Workout Complete!";
+"notification.complete.body" = "Great job! You've completed your workout.";
+"notification.action.pause" = "Pause";
+"notification.action.skip" = "Skip";
+
+// MARK: - Sample Workouts
+"sample.hiit2010.name" = "HIIT 20/10";
+"sample.tabata.name" = "Tabata";
+"sample.boxing.name" = "Boxing 3min";
+"sample.emom.name" = "EMOM 10min";
+"sample.prepare" = "Prepare";
+"sample.workout" = "Workout";
+"sample.rest" = "Rest";
+"sample.round" = "Round";

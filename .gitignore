@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+
+# Swift Package Manager (legacy project artifacts)
+.build/
+.swiftpm/
+
+# Secrets and signing credentials
+.env
+.env.*
+!.env.example
+*.p8
+*.p12
+*.mobileprovision
+*.pem
+*.key
+GoogleService-Info.plist
+Secrets.plist
+Config.xcconfig
