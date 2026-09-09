@@ -113,13 +113,6 @@ struct TimerDisplayView: View {
             
             Spacer()
             
-            if let session = timerEngine.session,
-               let loop = session.configuration.loopDescription(for: session.globalStageIndex) {
-                Text(loop)
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-            }
         }
         .padding(.horizontal)
         .padding(.top, 8)
@@ -130,6 +123,16 @@ struct TimerDisplayView: View {
             // Stage type and name
             if let stage = timerEngine.session?.currentStage {
                 VStack(spacing: 8) {
+                    if let session = timerEngine.session,
+                       let loop = session.configuration.loopDescription(for: session.globalStageIndex) {
+                        Label(loop, systemImage: "repeat.circle.fill")
+                            .font(.system(size: isLandscape ? 20 : 24, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 6)
+                            .background(.white.opacity(0.18), in: Capsule())
+                    }
+
                     // Stage type icon
                     Image(systemName: stage.type.iconName)
                         .font(.system(size: isLandscape ? 30 : 40))
@@ -233,7 +236,22 @@ struct TimerDisplayView: View {
     }
     
     private var controlsView: some View {
-        HStack(spacing: 40) {
+        HStack(spacing: isLandscape ? 24 : 18) {
+            Button(action: {
+                timerEngine.previousStage()
+            }) {
+                VStack(spacing: 8) {
+                    Image(systemName: "backward.fill")
+                        .font(.title)
+                    Text(NSLocalizedString("timer.previous", comment: "Previous"))
+                        .font(.caption)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+                .foregroundColor(.white.opacity(0.95))
+            }
+            .disabled((timerEngine.session?.globalStageIndex ?? 0) == 0)
+
             // Skip button
             Button(action: {
                 timerEngine.skipStage()
@@ -243,6 +261,8 @@ struct TimerDisplayView: View {
                         .font(.title)
                     Text(NSLocalizedString("timer.skip", comment: "Skip"))
                         .font(.caption)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
                 .foregroundColor(.white.opacity(0.95))
             }
@@ -258,11 +278,13 @@ struct TimerDisplayView: View {
                         .font(.title)
                     Text(NSLocalizedString("timer.reset", comment: "Reset"))
                         .font(.caption)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
                 .foregroundColor(.white.opacity(0.95))
             }
         }
-        .padding(.horizontal, 60)
+        .padding(.horizontal, isLandscape ? 44 : 24)
         .padding(.bottom, 40)
     }
     

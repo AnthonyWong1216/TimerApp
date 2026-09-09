@@ -29,10 +29,13 @@
 "home.subtitle" = "Custom Interval Timer";
 "home.quick_start" = "Quick Start";
 "home.my_workouts" = "My Routines";
-"home.routine_hint" = "Long press a routine to edit or delete it";
+"home.routine_hint" = "Long press a routine to edit or delete it. Use the arrows to change its order.";
 "home.create_new" = "Create New";
 "home.edit" = "Edit";
 "home.delete" = "Delete";
+"home.delete_routine_title" = "Delete this routine?";
+"home.delete_routine_named_title" = "Delete \"%@\" routine?";
+"home.delete_routine_message" = "This cannot be undone.";
 "home.sample_workouts" = "Sample Workouts";
 "home.sample_subtitle" = "Try these pre-configured workouts";
 "home.empty_state" = "No workouts yet";
@@ -44,6 +47,7 @@
 // MARK: - Timer View
 "timer.next" = "Next";
 "timer.skip" = "Skip";
+"timer.previous" = "Previous";
 "timer.pause" = "Pause";
 "timer.resume" = "Resume";
 "timer.start" = "Start";
@@ -93,6 +97,7 @@
 
 // MARK: - Stage Editor
 "stage.name" = "Stage Name";
+"stage.name_placeholder" = "Enter stage title";
 "stage.type" = "Type";
 "stage.color" = "Color";
 "stage.duration" = "Duration";
@@ -120,6 +125,10 @@
 "settings.audio" = "Audio";
 "settings.voice_enabled" = "Voice Announcements";
 "settings.sound_enabled" = "Sound Effects";
+"settings.sound_test" = "Test Sound Effects";
+"settings.sound_test_tick" = "Tick";
+"settings.sound_test_beep" = "Beep";
+"settings.sound_test_chime" = "Chime";
 "settings.volume" = "Volume";
 "settings.language" = "Language";
 "settings.audio_footer" = "Configure voice announcements and sound effects";
@@ -128,11 +137,14 @@
 "settings.dark_mode" = "Dark Mode";
 "settings.timer_font" = "Timer Number Font";
 "settings.timer_progress" = "Countdown Style";
+"settings.countdown" = "Final Countdown";
+"settings.countdown_option" = "%d seconds";
 "settings.display_footer" = "Prevent screen from dimming during workout";
 "settings.notifications_header" = "Notifications";
 "settings.notifications" = "Notifications";
 "settings.enable" = "Enable";
 "settings.notifications_footer" = "Receive notifications for stage changes";
+"settings.open_notification_settings" = "Open iPhone Notification Settings";
 "settings.about" = "About";
 "settings.version" = "Version";
 "settings.support" = "Support";
@@ -142,12 +154,14 @@
 // MARK: - Voice Announcements
 "voice.resume" = "Resume";
 "voice.workout_complete" = "Workout complete! Great job!";
+"voice.remaining_seconds" = "%d seconds remaining";
 
 // MARK: - Notifications
 "notification.stage_change.title" = "Stage Change";
 "notification.stage_change.body" = "Next: %@";
 "notification.complete.title" = "Workout Complete!";
 "notification.complete.body" = "Great job! You've completed your workout.";
+"notification.remaining.title" = "Time Remaining";
 "notification.action.pause" = "Pause";
 "notification.action.skip" = "Skip";
 

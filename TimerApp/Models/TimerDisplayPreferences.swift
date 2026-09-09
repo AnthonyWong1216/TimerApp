@@ -30,3 +30,15 @@ enum TimerProgressStyle: String, CaseIterable, Identifiable {
         NSLocalizedString("timer.progress.\(rawValue)", comment: "Timer progress style")
     }
 }
+
+enum CountdownAnnouncement: Int, CaseIterable, Identifiable {
+    case three = 3
+    case five = 5
+    case ten = 10
+
+    var id: Int { rawValue }
+
+    var localizedName: String {
+        String(format: NSLocalizedString("settings.countdown_option", comment: "Countdown option"), rawValue)
+    }
+}

@@ -505,24 +505,54 @@ struct StageEditorView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField(
-                        NSLocalizedString("stage.name", comment: "Stage Name"),
-                        text: $name
-                    )
-                    
-                    Picker(
-                        NSLocalizedString("stage.type", comment: "Type"),
-                        selection: $type
-                    ) {
-                        ForEach(StageType.allCases, id: \.self) { type in
-                            Label(type.localizedName, systemImage: type.iconName)
-                                .tag(type)
+                    // Stage type picker with icons and colors
+                    // 帶圖示和顏色的階段類型選擇器
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(NSLocalizedString("stage.type", comment: "Type"))
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.primary.opacity(0.75))
+                        
+                        HStack(spacing: 10) {
+                            ForEach(StageType.allCases, id: \.self) { stageType in
+                                Button {
+                                    type = stageType
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: stageType.iconName)
+                                            .font(.subheadline.weight(.semibold))
+                                        Text(stageType.localizedName)
+                                            .font(.subheadline.weight(.semibold))
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .foregroundStyle(type == stageType ? .white : stageType.defaultColor.color)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(type == stageType ? stageType.defaultColor.color : stageType.defaultColor.color.opacity(0.15))
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityAddTraits(type == stageType ? .isSelected : [])
+                            }
                         }
                     }
                     .onChange(of: type) { _, newType in
-                        // Changing type selects its conventional default color.
-                        // The color picker below still lets the user override it.
+                        // Set a useful title and conventional color when changing type.
+                        name = newType.localizedName
                         colorTheme = newType.defaultColor
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(NSLocalizedString("stage.name", comment: "Stage Name"))
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.primary.opacity(0.75))
+                        TextField(
+                            NSLocalizedString("stage.name_placeholder", comment: "Stage title"),
+                            text: $name
+                        )
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 9)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color(.tertiarySystemBackground)))
                     }
                     
                     Picker(

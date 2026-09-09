@@ -29,10 +29,13 @@
 "home.subtitle" = "自訂間歇計時器";
 "home.quick_start" = "快速開始";
 "home.my_workouts" = "我的訓練流程";
-"home.routine_hint" = "長按訓練流程即可編輯或刪除";
+"home.routine_hint" = "長按訓練流程即可編輯或刪除；使用箭頭可變更排序。";
 "home.create_new" = "創建新訓練";
 "home.edit" = "編輯";
 "home.delete" = "刪除";
+"home.delete_routine_title" = "刪除此訓練流程？";
+"home.delete_routine_named_title" = "刪除「%@」訓練流程？";
+"home.delete_routine_message" = "刪除後無法復原。";
 "home.sample_workouts" = "範例訓練";
 "home.sample_subtitle" = "試試這些預設的訓練配置";
 "home.empty_state" = "尚無訓練";
@@ -44,6 +47,7 @@
 // MARK: - Timer View
 "timer.next" = "下一個";
 "timer.skip" = "跳過";
+"timer.previous" = "上一個";
 "timer.pause" = "暫停";
 "timer.resume" = "繼續";
 "timer.start" = "開始";
@@ -93,6 +97,7 @@
 
 // MARK: - Stage Editor
 "stage.name" = "階段名稱";
+"stage.name_placeholder" = "輸入階段名稱";
 "stage.type" = "類型";
 "stage.color" = "顏色";
 "stage.duration" = "時長";
@@ -120,6 +125,10 @@
 "settings.audio" = "音訊";
 "settings.voice_enabled" = "語音提示";
 "settings.sound_enabled" = "音效";
+"settings.sound_test" = "測試音效";
+"settings.sound_test_tick" = "Tick";
+"settings.sound_test_beep" = "Beep";
+"settings.sound_test_chime" = "Chime";
 "settings.volume" = "音量";
 "settings.language" = "語言";
 "settings.audio_footer" = "配置語音提示和音效";
@@ -128,11 +137,14 @@
 "settings.dark_mode" = "深色模式";
 "settings.timer_font" = "計時數字字體";
 "settings.timer_progress" = "倒數樣式";
+"settings.countdown" = "最後倒數";
+"settings.countdown_option" = "%d 秒";
 "settings.display_footer" = "訓練期間防止螢幕變暗";
 "settings.notifications_header" = "通知";
 "settings.notifications" = "通知";
 "settings.enable" = "啟用";
 "settings.notifications_footer" = "接收階段變更的通知";
+"settings.open_notification_settings" = "開啟 iPhone 通知設定";
 "settings.about" = "關於";
 "settings.version" = "版本";
 "settings.support" = "支援";
@@ -142,12 +154,14 @@
 // MARK: - Voice Announcements
 "voice.resume" = "繼續";
 "voice.workout_complete" = "訓練完成！做得好！";
+"voice.remaining_seconds" = "還剩 %d 秒";
 
 // MARK: - Notifications
 "notification.stage_change.title" = "階段變更";
 "notification.stage_change.body" = "下一個：%@";
 "notification.complete.title" = "訓練完成！";
 "notification.complete.body" = "做得好！您已完成訓練。";
+"notification.remaining.title" = "剩餘時間";
 "notification.action.pause" = "暫停";
 "notification.action.skip" = "跳過";
 

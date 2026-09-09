@@ -34,7 +34,7 @@ class AudioManager: NSObject, ObservableObject {
     @Published var volume: Float = 1.0
     
     // MARK: - Private Properties
-    private let synthesizer = AVSpeechSynthesizer()
+    private var synthesizer = AVSpeechSynthesizer()
     private var audioPlayers: [String: AVAudioPlayer] = [:]
     private var currentLanguage: Language = .english
     
@@ -42,7 +42,7 @@ class AudioManager: NSObject, ObservableObject {
     
     private override init() {
         super.init()
-        synthesizer.delegate = self
+        configureSynthesizer()
         configureAudioSession()
         loadSettings()
     }
@@ -53,7 +53,7 @@ class AudioManager: NSObject, ObservableObject {
     /// 使用文字轉語音朗讀文字
     func speak(_ text: String, language: Language? = nil) {
         guard isEnabled && voiceEnabled else { return }
-        
+
         let lang = language ?? currentLanguage
         
         let utterance = AVSpeechUtterance(string: text)
@@ -63,6 +63,8 @@ class AudioManager: NSObject, ObservableObject {
         
         synthesizer.speak(utterance)
     }
+
+    var isVoiceEnabled: Bool { isEnabled && voiceEnabled }
     
     /// Stop current speech
     /// 停止當前語音
@@ -71,20 +73,43 @@ class AudioManager: NSObject, ObservableObject {
             synthesizer.stopSpeaking(at: .immediate)
         }
     }
+
+    /// Stop any currently playing sound effects.
+    func stopSounds() {
+        audioPlayers.values.forEach { $0.stop() }
+        audioPlayers.removeAll()
+    }
     
     /// Play sound effect
     /// 播放音效
     func playSound(_ sound: SoundEffect) {
         guard isEnabled && soundEnabled else { return }
-        
-        // Try to get existing player or create new one
-        if let player = audioPlayers[sound.rawValue] {
-            player.currentTime = 0
-            player.volume = volume
-            player.play()
-        } else {
-            loadAndPlaySound(sound)
+        guard Bundle.main.url(forResource: sound.filename, withExtension: "mp3") != nil else {
+            // Sound assets are optional. Voice announcements continue to work without them.
+            return
         }
+
+        configureAudioSession()
+
+        // Timer events may overlap, but the settings preview deliberately plays
+        // one selected sound at a time.
+        loadAndPlaySound(sound)
+    }
+
+    /// Play exactly one sound for the settings preview.
+    func previewSound(_ sound: SoundEffect) {
+        stopSounds()
+        playSound(sound)
+    }
+
+    /// Recover speech after iOS has interrupted audio while the app was locked
+    /// or in the background. MP3 players recover independently, but an
+    /// AVSpeechSynthesizer can remain unable to enqueue new utterances.
+    func resumeAfterAppBecomesActive() {
+        configureAudioSession()
+        synthesizer.stopSpeaking(at: .immediate)
+        synthesizer = AVSpeechSynthesizer()
+        configureSynthesizer()
     }
     
     /// Set language for voice announcements
@@ -138,6 +163,10 @@ class AudioManager: NSObject, ObservableObject {
             print("Failed to configure audio session: \(error)")
         }
     }
+
+    private func configureSynthesizer() {
+        synthesizer.delegate = self
+    }
     
     /// Load and play sound effect
     /// 載入並播放音效
@@ -146,17 +175,21 @@ class AudioManager: NSObject, ObservableObject {
             forResource: sound.filename,
             withExtension: "mp3"
         ) else {
-            print("Sound file not found: \(sound.filename)")
             return
         }
         
         do {
             let player = try AVAudioPlayer(contentsOf: url)
+            player.delegate = self
             player.volume = volume
             player.prepareToPlay()
-            player.play()
-            
-            audioPlayers[sound.rawValue] = player
+            let identifier = "\(sound.rawValue).\(UUID().uuidString)"
+            audioPlayers[identifier] = player
+
+            if !player.play() {
+                audioPlayers.removeValue(forKey: identifier)
+                print("Failed to start sound: \(sound.filename)")
+            }
         } catch {
             print("Failed to load sound: \(error)")
         }
@@ -225,6 +258,14 @@ extension AudioManager: AVSpeechSynthesizerDelegate {
     }
 }
 
+// MARK: - AVAudioPlayerDelegate
+
+extension AudioManager: AVAudioPlayerDelegate {
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        audioPlayers = audioPlayers.filter { $0.value !== player }
+    }
+}
+
 // MARK: - Language Support
 
 /// Supported languages for voice announcements
@@ -276,7 +317,8 @@ extension AudioManager {
             do {
                 let player = try AVAudioPlayer(contentsOf: url)
                 player.prepareToPlay()
-                audioPlayers[sound.rawValue] = player
+                // Validate the asset at launch. Playback creates a fresh player.
+                _ = player
             } catch {
                 print("Failed to preload sound \(sound.filename): \(error)")
             }

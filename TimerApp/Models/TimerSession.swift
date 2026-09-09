@@ -82,8 +82,11 @@ class TimerSession: ObservableObject {
     /// Formatted time remaining (MM:SS)
     /// 格式化的剩餘時間（MM:SS）
     var formattedTimeRemaining: String {
-        let minutes = Int(timeRemaining) / 60
-        let seconds = Int(timeRemaining) % 60
+        // Keep the visible value aligned with announcements made at each second.
+        // For example, 5.9 seconds remaining is displayed as 00:06, not 00:05.
+        let displayedSeconds = Int(ceil(timeRemaining))
+        let minutes = displayedSeconds / 60
+        let seconds = displayedSeconds % 60
         return String(format: "%02d:%02d", minutes, seconds)
     }
     
@@ -171,6 +174,14 @@ class TimerSession: ObservableObject {
         guard state == .running || state == .paused else { return }
         
         advanceToNextStage()
+    }
+
+    /// Return to the previous stage and restart its duration.
+    func previousStage() {
+        guard (state == .running || state == .paused), currentStageIndex > 0 else { return }
+
+        currentStageIndex -= 1
+        timeRemaining = currentStage?.duration ?? 0
     }
     
     /// Update timer (called every tick)

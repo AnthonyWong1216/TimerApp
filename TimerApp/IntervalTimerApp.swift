@@ -23,6 +23,10 @@ struct IntervalLoopApp: App {
     }
     
     private func setupApp() {
+        // Activate Watch Connectivity early so the WCSession is ready
+        // before the user starts a workout.
+        _ = WatchConnectivityManager.shared
+        
         // Configure audio session
         AudioManager.shared.preloadSounds()
         

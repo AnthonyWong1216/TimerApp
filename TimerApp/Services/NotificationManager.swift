@@ -26,6 +26,7 @@ class NotificationManager: NSObject, ObservableObject {
     private enum NotificationIdentifier {
         static let stageChange = "stageChange"
         static let workoutComplete = "workoutComplete"
+        static let timerEventPrefix = "timerEvent"
     }
     
     // MARK: - Initialization
@@ -100,6 +101,31 @@ class NotificationManager: NSObject, ObservableObject {
             }
         }
     }
+
+    /// Schedules an audible local notification for a timer event while the app is in background.
+    func scheduleTimerEvent(title: String, body: String, timeInterval: TimeInterval, identifier: String) {
+        // Do not rely on the asynchronously published authorization value here.
+        // The system accepts the request when permission has already been granted.
+        guard timeInterval >= 1 else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        content.categoryIdentifier = "TIMER_STAGE"
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: timeInterval, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: "\(NotificationIdentifier.timerEventPrefix).\(identifier)",
+            content: content,
+            trigger: trigger
+        )
+        notificationCenter.add(request) { error in
+            if let error {
+                print("Failed to schedule timer event: \(error)")
+            }
+        }
+    }
     
     /// Show workout completion notification
     /// 顯示訓練完成通知
@@ -130,10 +156,11 @@ class NotificationManager: NSObject, ObservableObject {
         }
     }
     
-    /// Cancel all pending notifications
-    /// 取消所有待處理的通知
+    /// Cancel all pending and delivered notifications
+    /// 取消所有待處理和已送達的通知
     func cancelAll() {
         notificationCenter.removeAllPendingNotificationRequests()
+        notificationCenter.removeAllDeliveredNotifications()
     }
     
     /// Cancel specific notification
@@ -187,8 +214,9 @@ extension NotificationManager: UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        // Show notification even when app is in foreground
-        completionHandler([.banner, .sound])
+        // Suppress notifications while the app is in the foreground –
+        // the timer UI and audio announcements already keep the user informed.
+        completionHandler([])
     }
     
     /// Handle notification response

@@ -18,6 +18,7 @@ struct SettingsView: View {
     @AppStorage("useDarkMode") private var useDarkMode = true
     @AppStorage("timerNumberFont") private var timerNumberFont = TimerNumberFont.rounded.rawValue
     @AppStorage("timerProgressStyle") private var timerProgressStyle = TimerProgressStyle.circle.rawValue
+    @AppStorage("countdownAnnouncement") private var countdownAnnouncement = CountdownAnnouncement.three.rawValue
     
     var body: some View {
         NavigationStack {
@@ -33,6 +34,20 @@ struct SettingsView: View {
                         NSLocalizedString("settings.sound_enabled", comment: "Sound Effects"),
                         isOn: $audioManager.soundEnabled
                     )
+
+                    HStack {
+                        Text(NSLocalizedString("settings.sound_test", comment: "Test sound effects"))
+                        Spacer()
+                        Button(NSLocalizedString("settings.sound_test_tick", comment: "Tick")) {
+                            audioManager.previewSound(.countdown)
+                        }
+                        Button(NSLocalizedString("settings.sound_test_beep", comment: "Beep")) {
+                            audioManager.previewSound(.stageTransition)
+                        }
+                        Button(NSLocalizedString("settings.sound_test_chime", comment: "Chime")) {
+                            audioManager.previewSound(.completion)
+                        }
+                    }
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text(NSLocalizedString("settings.volume", comment: "Volume"))
@@ -94,6 +109,12 @@ struct SettingsView: View {
                             Text(style.localizedName).tag(style.rawValue)
                         }
                     }
+
+                    Picker(NSLocalizedString("settings.countdown", comment: "Countdown announcement"), selection: $countdownAnnouncement) {
+                        ForEach(CountdownAnnouncement.allCases) { option in
+                            Text(option.localizedName).tag(option.rawValue)
+                        }
+                    }
                 } header: {
                     Text(NSLocalizedString("settings.display", comment: "Display"))
                 } footer: {
@@ -115,6 +136,11 @@ struct SettingsView: View {
                                 requestNotifications()
                             }
                         }
+                    }
+
+                    Button(NSLocalizedString("settings.open_notification_settings", comment: "Open notification settings")) {
+                        guard let settingsURL = URL(string: UIApplication.openSettingsURLString) else { return }
+                        UIApplication.shared.open(settingsURL)
                     }
                 } header: {
                     Text(NSLocalizedString("settings.notifications_header", comment: "Notifications"))

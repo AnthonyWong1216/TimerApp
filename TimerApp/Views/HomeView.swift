@@ -95,22 +95,34 @@ struct HomeView: View {
                 loadConfigurations()
                 requestNotificationPermission()
             }
-            .confirmationDialog(
-                NSLocalizedString("home.delete_routine_title", comment: "Delete routine"),
+            .alert(
+                deleteRoutineTitle,
                 isPresented: Binding(
                     get: { routineToDelete != nil },
                     set: { if !$0 { routineToDelete = nil } }
                 ),
-                titleVisibility: .visible
             ) {
                 Button(NSLocalizedString("home.delete", comment: "Delete"), role: .destructive) {
                     if let routineToDelete { deleteConfiguration(routineToDelete) }
+                    routineToDelete = nil
+                }
+                Button(NSLocalizedString("editor.cancel", comment: "Cancel"), role: .cancel) {
                     routineToDelete = nil
                 }
             } message: {
                 Text(NSLocalizedString("home.delete_routine_message", comment: "Delete routine message"))
             }
         }
+    }
+
+    private var deleteRoutineTitle: String {
+        guard let routineToDelete else {
+            return NSLocalizedString("home.delete_routine_title", comment: "Delete routine")
+        }
+        return String(
+            format: NSLocalizedString("home.delete_routine_named_title", comment: "Delete named routine"),
+            routineToDelete.name
+        )
     }
     
     // MARK: - Subviews
@@ -186,29 +198,19 @@ struct HomeView: View {
                         canMoveUp: configurations.first?.id != config.id,
                         canMoveDown: configurations.last?.id != config.id
                     )
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) {
-                            routineToDelete = config
-                        } label: {
-                            Label(
-                                NSLocalizedString("home.delete", comment: "Delete"),
-                                systemImage: "trash"
-                            )
-                        }
-                    }
                     .contextMenu {
-                        Button(action: {
+                        Button {
                             selectedConfiguration = config
-                        }) {
+                        } label: {
                             Label(
                                 NSLocalizedString("home.edit", comment: "Edit"),
                                 systemImage: "pencil"
                             )
                         }
-                        
-                        Button(role: .destructive, action: {
+
+                        Button(role: .destructive) {
                             routineToDelete = config
-                        }) {
+                        } label: {
                             Label(
                                 NSLocalizedString("home.delete", comment: "Delete"),
                                 systemImage: "trash"
@@ -345,18 +347,21 @@ struct WorkoutCard: View {
                 }
 
                 HStack(spacing: 14) {
-                    Button(action: onMoveUp) {
-                        Image(systemName: "chevron.up.circle.fill")
+                    if canMoveUp {
+                        Button(action: onMoveUp) {
+                            Image(systemName: "chevron.up.circle.fill")
+                        }
                     }
-                    .disabled(!canMoveUp)
 
-                    Button(action: onMoveDown) {
-                        Image(systemName: "chevron.down.circle.fill")
+                    if canMoveDown {
+                        Button(action: onMoveDown) {
+                            Image(systemName: "chevron.down.circle.fill")
+                        }
                     }
-                    .disabled(!canMoveDown)
                 }
                 .font(.title3)
                 .foregroundStyle(.blue)
+
         }
         .padding()
         .background(
