@@ -21,7 +21,9 @@ struct RoutinePreviewView: View {
                     Section(groupTitle(group, index: index + 1)) {
                         ForEach(group.stages) { stage in
                             HStack {
-                                Circle().fill(stage.colorTheme.color).frame(width: 10, height: 10)
+                                Image(systemName: stage.type.iconName)
+                                    .foregroundStyle(stage.colorTheme.color)
+                                    .frame(width: 20)
                                 Text(stage.name)
                                 Spacer()
                                 Text(stage.formattedDuration).monospacedDigit()

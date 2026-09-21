@@ -66,15 +66,21 @@ class TimerEngine: ObservableObject {
         self.session = newSession
         observeSession(newSession)
         
+        // Start the silent audio loop immediately so iOS already sees an active
+        // audio session when the user later locks the screen or switches apps.
+        // 立即啟動靜音循環，這樣用戶之後鎖屏或切 app 時，iOS 已經看到
+        // 活躍的 audio session，會允許背景繼續播放。
+        audioManager.startBackgroundAudio()
+        
+        // Keep screen on during workout if the user enabled the setting.
+        // 訓練期間保持螢幕常亮（如果用戶啟用了該設定）
+        updateIdleTimer(active: true)
+        
         // Start timer
         startTimer()
         
         // Announce first stage
         announceStageStart()
-
-        // Queue all notification sounds immediately. This must happen while the
-        // app is active, before iOS suspends it after the screen is locked.
-        scheduleBackgroundNotifications()
         
         // Mark configuration as used
         updateLastUsed(configuration)
@@ -90,6 +96,7 @@ class TimerEngine: ObservableObject {
         session.pause()
         stopTimer()
         audioManager.stopSpeaking()
+        audioManager.stopBackgroundAudio()
         notificationManager.cancelAll()
         publishWatchState()
     }
@@ -100,9 +107,9 @@ class TimerEngine: ObservableObject {
         guard let session = session, session.state == .paused else { return }
         
         session.resume()
+        audioManager.startBackgroundAudio()
         startTimer()
         audioManager.speak(NSLocalizedString("voice.resume", comment: "Resume"))
-        scheduleBackgroundNotifications()
         publishWatchState()
     }
     
@@ -114,9 +121,11 @@ class TimerEngine: ObservableObject {
         session = nil
         isActive = false
         audioManager.stopSpeaking()
+        audioManager.stopBackgroundAudio()
         endBackgroundTask()
         notificationManager.cancelAll()
         sessionCancellable = nil
+        updateIdleTimer(active: false)
         publishWatchState()
     }
     
@@ -303,11 +312,16 @@ class TimerEngine: ObservableObject {
         // Trigger haptic feedback
         triggerCompletionHaptic()
         
+        // Stop background keep-alive audio
+        audioManager.stopBackgroundAudio()
+        
         // End background task
         endBackgroundTask()
         
+        // Allow screen to sleep again
+        updateIdleTimer(active: false)
+        
         // Cancel any remaining stage notifications before showing the completion one
-        // 清除剩餘的階段通知，再顯示完成通知
         notificationManager.cancelAll()
         
         // Show completion notification
@@ -367,28 +381,21 @@ class TimerEngine: ObservableObject {
         }
     }
 
-    /// Schedule all remaining stage and warning notifications for background use.
-    /// (Final countdown 5, 4, 3, 2, 1 notifications are intentionally skipped —
-    ///  they are too noisy when the screen is off.)
-    private func scheduleBackgroundNotifications() {
+    /// Schedule only the workout-completion notification as a fallback.
+    /// With background audio mode the Timer keeps ticking and plays sounds
+    /// directly, so per-stage notifications are no longer needed.
+    /// 只排程訓練完成通知作為備用。有了背景音頻模式，Timer 持續運行並直接
+    /// 播放音效，不再需要每個 stage 的通知。
+    private func scheduleCompletionNotification() {
         guard let session, session.state == .running else { return }
 
         notificationManager.cancelAll()
+
+        // Calculate total remaining time across all stages
         let stages = session.configuration.expandedStages
         var delay = session.timeRemaining
-
-        scheduleBackgroundEvents(for: session.currentStage, delay: 0)
-
         for index in (session.globalStageIndex + 1)..<stages.count {
-            let stage = stages[index]
-            notificationManager.scheduleTimerEvent(
-                title: stage.type.localizedName,
-                body: stage.name,
-                timeInterval: delay,
-                identifier: "stage-\(index)"
-            )
-            scheduleBackgroundEvents(for: stage, delay: delay)
-            delay += stage.duration
+            delay += stages[index].duration
         }
 
         notificationManager.scheduleTimerEvent(
@@ -397,20 +404,6 @@ class TimerEngine: ObservableObject {
             timeInterval: delay,
             identifier: "complete"
         )
-    }
-
-    private func scheduleBackgroundEvents(for stage: TimerStage?, delay: TimeInterval) {
-        guard let stage else { return }
-        let stageDuration = delay == 0 ? session?.timeRemaining ?? 0 : stage.duration
-
-        for warning in warningThresholds where stageDuration > Double(warning) {
-            notificationManager.scheduleTimerEvent(
-                title: NSLocalizedString("notification.remaining.title", comment: "Time remaining"),
-                body: remainingTimeAnnouncement(warning),
-                timeInterval: delay + stageDuration - Double(warning),
-                identifier: "remaining-\(UUID())-\(warning)"
-            )
-        }
     }
     
     /// Update last used date for configuration
@@ -470,6 +463,20 @@ class TimerEngine: ObservableObject {
                 self?.handleAppWillTerminate()
             }
             .store(in: &cancellables)
+        
+        // Listen for notification action buttons (Pause / Skip)
+        // 監聽通知動作按鈕（暫停 / 跳過）
+        NotificationCenter.default.publisher(for: .timerPauseRequested)
+            .sink { [weak self] _ in
+                self?.pause()
+            }
+            .store(in: &cancellables)
+        
+        NotificationCenter.default.publisher(for: .timerSkipRequested)
+            .sink { [weak self] _ in
+                self?.skipStage()
+            }
+            .store(in: &cancellables)
     }
     
     /// Handle app will resign active
@@ -480,11 +487,16 @@ class TimerEngine: ObservableObject {
         // Save session state
         saveSessionState()
         
-        // Request extra background execution time from iOS (~30s).
-        // 向 iOS 請求額外的背景執行時間（約 30 秒）
+        // The silent audio loop is already running (started in startWorkout),
+        // so the audio session stays alive and the Timer keeps ticking.
+        // 靜音循環已在 startWorkout 時啟動，audio session 持續存活，Timer 繼續運行。
+        
+        // Request extra background execution time as a fallback.
         beginBackgroundTask()
         
-        scheduleBackgroundNotifications()
+        // Schedule a completion notification so the user is informed even if
+        // the OS eventually reclaims the audio session after a very long time.
+        scheduleCompletionNotification()
     }
     
     /// Handle app did become active
@@ -570,6 +582,14 @@ class TimerEngine: ObservableObject {
             announceStageStart()
             publishWatchState()
         }
+    }
+    
+    /// Enable or disable the idle timer (screen auto-lock) based on the user's
+    /// "Keep Screen On" setting and whether a workout is active.
+    /// 根據用戶的「保持螢幕常亮」設定和訓練是否進行中，啟用或禁用螢幕自動鎖定。
+    private func updateIdleTimer(active: Bool) {
+        let keepScreenOn = UserDefaults.standard.bool(forKey: "keepScreenOn")
+        UIApplication.shared.isIdleTimerDisabled = active && keepScreenOn
     }
 }
 

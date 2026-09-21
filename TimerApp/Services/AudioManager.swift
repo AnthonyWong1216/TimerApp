@@ -37,6 +37,11 @@ class AudioManager: NSObject, ObservableObject {
     private var synthesizer = AVSpeechSynthesizer()
     private var audioPlayers: [String: AVAudioPlayer] = [:]
     private var currentLanguage: Language = .english
+    /// A near-silent looping player that keeps the audio session (and therefore
+    /// the process + RunLoop) alive while the app is in the background.
+    private var silentPlayer: AVAudioPlayer?
+    /// Whether background keep-alive audio is currently requested.
+    private var backgroundAudioActive = false
     
     // MARK: - Initialization
     
@@ -45,6 +50,15 @@ class AudioManager: NSObject, ObservableObject {
         configureSynthesizer()
         configureAudioSession()
         loadSettings()
+        
+        // Listen for audio session interruptions (e.g. phone call, Siri) so we
+        // can resume the silent keep-alive player afterwards.
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAudioInterruption(_:)),
+            name: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance()
+        )
     }
     
     // MARK: - Public Methods
@@ -103,13 +117,51 @@ class AudioManager: NSObject, ObservableObject {
     }
 
     /// Recover speech after iOS has interrupted audio while the app was locked
-    /// or in the background. MP3 players recover independently, but an
-    /// AVSpeechSynthesizer can remain unable to enqueue new utterances.
+    /// or in the background.
     func resumeAfterAppBecomesActive() {
         configureAudioSession()
-        synthesizer.stopSpeaking(at: .immediate)
-        synthesizer = AVSpeechSynthesizer()
-        configureSynthesizer()
+        // Only recreate the synthesizer if it seems stuck; a working one should
+        // be left alone so queued utterances are not lost.
+        if !synthesizer.isSpeaking {
+            synthesizer.stopSpeaking(at: .immediate)
+            synthesizer = AVSpeechSynthesizer()
+            configureSynthesizer()
+        }
+    }
+
+    // MARK: - Background Keep-Alive
+
+    /// Start a near-silent audio loop so iOS keeps the audio session alive in
+    /// the background. Must be called **while the app is still in the foreground**
+    /// (e.g. when the workout starts) so that audio is already playing before
+    /// the app transitions to the background.
+    func startBackgroundAudio() {
+        guard silentPlayer == nil else { return }
+        backgroundAudioActive = true
+
+        configureAudioSession()
+
+        guard let url = Bundle.main.url(forResource: "silence", withExtension: "mp3") else {
+            return
+        }
+
+        do {
+            let player = try AVAudioPlayer(contentsOf: url)
+            player.numberOfLoops = -1   // loop forever
+            player.volume = 0.01        // near-silent
+            player.prepareToPlay()
+            player.play()
+            silentPlayer = player
+        } catch {
+            print("Failed to start background audio loop: \(error)")
+        }
+    }
+
+    /// Stop the background keep-alive audio loop.
+    func stopBackgroundAudio() {
+        backgroundAudioActive = false
+        silentPlayer?.stop()
+        silentPlayer = nil
     }
     
     /// Set language for voice announcements
@@ -153,14 +205,43 @@ class AudioManager: NSObject, ObservableObject {
     private func configureAudioSession() {
         do {
             let audioSession = AVAudioSession.sharedInstance()
+            // Use `.playback` without `.mixWithOthers` so that iOS treats this
+            // as primary audio and keeps the app alive in the background.
+            // `.duckOthers` lowers other audio (e.g. music) instead of stopping it.
             try audioSession.setCategory(
                 .playback,
                 mode: .default,
-                options: [.mixWithOthers]
+                options: [.duckOthers]
             )
-            try audioSession.setActive(true)
+            try audioSession.setActive(true, options: [])
         } catch {
             print("Failed to configure audio session: \(error)")
+        }
+    }
+
+    /// Handle audio session interruptions (phone call, Siri, etc.).
+    /// When the interruption ends, restart the silent keep-alive player.
+    @objc private func handleAudioInterruption(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let typeRaw = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeRaw) else {
+            return
+        }
+
+        switch type {
+        case .began:
+            // Audio interrupted — nothing to do, iOS pauses our players automatically.
+            break
+        case .ended:
+            // Interruption ended — reactivate the session and restart the silent player.
+            let options = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
+            if AVAudioSession.InterruptionOptions(rawValue: options).contains(.shouldResume) ||
+               backgroundAudioActive {
+                configureAudioSession()
+                silentPlayer?.play()
+            }
+        @unknown default:
+            break
         }
     }
 

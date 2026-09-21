@@ -32,9 +32,6 @@ struct IntervalLoopApp: App {
         
         // Setup notification categories
         NotificationManager.shared.setupNotificationCategories()
-        
-        // Configure screen settings
-        UIApplication.shared.isIdleTimerDisabled = UserDefaults.standard.bool(forKey: "keepScreenOn")
     }
 }
 

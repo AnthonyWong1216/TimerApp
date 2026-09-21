@@ -305,63 +305,83 @@ struct WorkoutCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(configuration.name)
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        
-                        Text("\(configuration.totalStages) \(NSLocalizedString("home.stages", comment: "stages"))")
-                            .font(.caption)
-                            .foregroundStyle(.primary.opacity(0.75))
-                    }
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(configuration.name)
+                        .font(.headline)
+                        .foregroundColor(.primary)
                     
-                    Spacer()
-                    
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text(configuration.formattedTotalDuration)
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                            .monospacedDigit()
-                        
-                        Text(NSLocalizedString("home.total_time", comment: "Total"))
-                            .font(.caption2)
-                            .foregroundStyle(.primary.opacity(0.75))
-                    }
+                    Text("\(configuration.totalStages) \(NSLocalizedString("home.stages", comment: "stages"))")
+                        .font(.caption)
+                        .foregroundStyle(.primary.opacity(0.75))
                 }
                 
-                // Stage preview
-                HStack(spacing: 8) {
-                    ForEach(configuration.expandedStages.prefix(5)) { stage in
-                        Circle()
-                            .fill(stage.colorTheme.color)
-                            .frame(width: 8, height: 8)
-                    }
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(configuration.formattedTotalDuration)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
                     
-                    if configuration.totalStages > 5 {
-                        Text("+\(configuration.totalStages - 5)")
-                            .font(.caption2)
-                            .foregroundStyle(.primary.opacity(0.75))
+                    Text(NSLocalizedString("home.total_time", comment: "Total"))
+                        .font(.caption2)
+                        .foregroundStyle(.primary.opacity(0.75))
+                }
+            }
+                
+            // Stage preview — icons with colours
+            HStack(spacing: 6) {
+                ForEach(configuration.expandedStages.prefix(5)) { stage in
+                    Image(systemName: stage.type.iconName)
+                        .font(.caption2)
+                        .foregroundStyle(stage.colorTheme.color)
+                }
+                
+                if configuration.totalStages > 5 {
+                    Text("+\(configuration.totalStages - 5)")
+                        .font(.caption2)
+                        .foregroundStyle(.primary.opacity(0.75))
+                }
+            }
+
+            // Action buttons — each is an independent tap target
+            HStack(spacing: 16) {
+                // Play button to start routine
+                Button(action: onTap) {
+                    Image(systemName: "play.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.green)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+
+                if canMoveUp {
+                    Button(action: onMoveUp) {
+                        Image(systemName: "chevron.up.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.blue)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.borderless)
                 }
 
-                HStack(spacing: 14) {
-                    if canMoveUp {
-                        Button(action: onMoveUp) {
-                            Image(systemName: "chevron.up.circle.fill")
-                        }
+                if canMoveDown {
+                    Button(action: onMoveDown) {
+                        Image(systemName: "chevron.down.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.blue)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
-
-                    if canMoveDown {
-                        Button(action: onMoveDown) {
-                            Image(systemName: "chevron.down.circle.fill")
-                        }
-                    }
+                    .buttonStyle(.borderless)
                 }
-                .font(.title3)
-                .foregroundStyle(.blue)
 
+                Spacer()
+            }
         }
         .padding()
         .background(
@@ -379,8 +399,6 @@ struct WorkoutCard: View {
                 }
                 .shadow(color: .blue.opacity(0.12), radius: 8, x: 0, y: 4)
         )
-        .contentShape(RoundedRectangle(cornerRadius: 16))
-        .onTapGesture(perform: onTap)
     }
 }
 

@@ -17,10 +17,12 @@ struct ConfigurationEditorView: View {
     
     @State private var name: String = ""
     @State private var stageGroups: [StageGroup] = []
-    @State private var showingStageEditor = false
-    @State private var editingStage: TimerStage?
     @State private var editingGroupID: UUID?
     @State private var insertBeforeStageID: UUID?
+    /// Drives the stage editor sheet. Contains the stage to edit (or nil for new).
+    /// Using `.sheet(item:)` with a unique token guarantees SwiftUI always
+    /// creates a fresh sheet with the correct value.
+    @State private var stageEditorToken: StageEditorToken?
     
     var body: some View {
         NavigationStack {
@@ -102,9 +104,9 @@ struct ConfigurationEditorView: View {
                 }
                 
             }
-            .sheet(isPresented: $showingStageEditor) {
+            .sheet(item: $stageEditorToken) { token in
                 StageEditorView(
-                    stage: editingStage,
+                    stage: token.stage,
                     onSave: { stage in
                         saveStage(stage)
                     }
@@ -157,10 +159,9 @@ struct ConfigurationEditorView: View {
     }
     
     private func editStage(_ stage: TimerStage, in groupID: UUID) {
-        editingStage = stage
         editingGroupID = groupID
         insertBeforeStageID = nil
-        showingStageEditor = true
+        stageEditorToken = StageEditorToken(stage: stage)
     }
     
     private func addGroup(repeatCount: Int) {
@@ -187,17 +188,15 @@ struct ConfigurationEditorView: View {
     }
 
     private func addStage(to groupID: UUID) {
-        editingStage = nil
         editingGroupID = groupID
         insertBeforeStageID = nil
-        showingStageEditor = true
+        stageEditorToken = StageEditorToken(stage: nil)
     }
 
     private func insertStage(before stage: TimerStage, in groupID: UUID) {
-        editingStage = nil
         editingGroupID = groupID
         insertBeforeStageID = stage.id
-        showingStageEditor = true
+        stageEditorToken = StageEditorToken(stage: nil)
     }
 
     private func saveStage(_ stage: TimerStage) {
@@ -397,69 +396,82 @@ struct StageRow: View {
     let canMoveDown: Bool
     
     var body: some View {
-        HStack(spacing: 12) {
-            Button(action: onInsertBefore) {
-                Image(systemName: "plus")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 30, height: 30)
-                    .background(Circle().fill(.blue))
-            }
-            .buttonStyle(.borderless)
-            .accessibilityLabel(NSLocalizedString("editor.insert_stage", comment: "Insert Stage"))
+        VStack(spacing: 6) {
+            // Row 1: stage info + edit + delete
+            HStack(spacing: 10) {
+                Image(systemName: stage.type.iconName)
+                    .foregroundStyle(stage.colorTheme.color)
+                    .font(.body.weight(.semibold))
 
-            ReorderButtons(
-                onMoveUp: onMoveUp,
-                onMoveDown: onMoveDown,
-                canMoveUp: canMoveUp,
-                canMoveDown: canMoveDown
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(stage.name)
+                        .font(.body)
+                        .foregroundColor(.primary)
+
+                    Text("\(stage.type.localizedName) • \(loopCount == 1 ? NSLocalizedString("editor.single_run", comment: "Single Run") : String(format: NSLocalizedString("editor.loop_run", comment: "Loop Run %d times"), loopCount))")
+                        .font(.caption)
+                        .foregroundStyle(.primary.opacity(0.75))
+                }
+
+                Spacer()
+
+                Text(stage.formattedDuration)
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                    .monospacedDigit()
+
+                Button(action: onEdit) {
+                    Image(systemName: "pencil.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.orange)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(NSLocalizedString("home.edit", comment: "Edit"))
+
+                Button(action: onDelete) {
+                    Image(systemName: "minus.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.red)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(NSLocalizedString("home.delete", comment: "Delete"))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color(.secondarySystemBackground))
             )
 
-            Button(action: onEdit) {
-                HStack(spacing: 12) {
-                    Circle()
-                        .fill(stage.colorTheme.color)
-                        .frame(width: 12, height: 12)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(stage.name)
-                            .font(.body)
-                            .foregroundColor(.primary)
-
-                        Text("\(stage.type.localizedName) • \(loopCount == 1 ? NSLocalizedString("editor.single_run", comment: "Single Run") : String(format: NSLocalizedString("editor.loop_run", comment: "Loop Run %d times"), loopCount))")
-                            .font(.caption)
-                            .foregroundStyle(.primary.opacity(0.75))
-                    }
-
-                    Spacer()
-
-                    Text(stage.formattedDuration)
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(.primary)
-                        .monospacedDigit()
+            // Row 2: insert + reorder
+            HStack(spacing: 16) {
+                Button(action: onInsertBefore) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.blue)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color(.secondarySystemBackground))
-                )
-                .contentShape(RoundedRectangle(cornerRadius: 10))
-            }
-            .buttonStyle(.plain)
+                .buttonStyle(.borderless)
+                .accessibilityLabel(NSLocalizedString("editor.insert_stage", comment: "Insert Stage"))
 
-            Button(action: onDelete) {
-                Image(systemName: "minus")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 34, height: 34)
-                    .background(Circle().fill(.red))
+                ReorderButtons(
+                    onMoveUp: onMoveUp,
+                    onMoveDown: onMoveDown,
+                    canMoveUp: canMoveUp,
+                    canMoveDown: canMoveDown
+                )
+
+                Spacer()
             }
-            .buttonStyle(.borderless)
-            .accessibilityLabel(NSLocalizedString("home.delete", comment: "Delete"))
+            .padding(.horizontal, 12)
         }
-        .padding(.vertical, 5)
+        .padding(.vertical, 3)
     }
 }
 
@@ -470,18 +482,23 @@ private struct ReorderButtons: View {
     let canMoveDown: Bool
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 16) {
             Button(action: onMoveUp) {
                 Image(systemName: "chevron.up.circle.fill")
+                    .font(.title2)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .disabled(!canMoveUp)
 
             Button(action: onMoveDown) {
                 Image(systemName: "chevron.down.circle.fill")
+                    .font(.title2)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .disabled(!canMoveDown)
         }
-        .font(.subheadline)
         .foregroundStyle(.blue)
         .buttonStyle(.borderless)
         .accessibilityElement(children: .contain)
@@ -777,6 +794,15 @@ struct DurationPicker: View {
                 .foregroundStyle(.primary.opacity(0.75))
         }
     }
+}
+
+// MARK: - Stage Editor Token
+
+/// Carries the stage to edit (or nil for a new stage) together with a unique ID
+/// so `.sheet(item:)` always opens a fresh sheet with the correct value.
+private struct StageEditorToken: Identifiable {
+    let id = UUID()
+    let stage: TimerStage?
 }
 
 // MARK: - Preview
