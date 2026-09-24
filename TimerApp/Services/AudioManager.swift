@@ -42,6 +42,9 @@ class AudioManager: NSObject, ObservableObject {
     private var silentPlayer: AVAudioPlayer?
     /// Whether background keep-alive audio is currently requested.
     private var backgroundAudioActive = false
+    /// Tracks how many sound effects / speech utterances are currently active.
+    /// When this drops back to 0 we un-duck other apps' audio.
+    private var activeSoundCount = 0
     
     // MARK: - Initialization
     
@@ -70,6 +73,9 @@ class AudioManager: NSObject, ObservableObject {
 
         let lang = language ?? currentLanguage
         
+        // Temporarily duck other audio while speaking
+        beginDucking()
+        
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = AVSpeechSynthesisVoice(language: lang.code)
         utterance.rate = 0.5 // Slightly slower for clarity
@@ -85,13 +91,19 @@ class AudioManager: NSObject, ObservableObject {
     func stopSpeaking() {
         if synthesizer.isSpeaking {
             synthesizer.stopSpeaking(at: .immediate)
+            // endDucking() will be called by the didCancel delegate
         }
     }
 
     /// Stop any currently playing sound effects.
     func stopSounds() {
+        let count = audioPlayers.count
         audioPlayers.values.forEach { $0.stop() }
         audioPlayers.removeAll()
+        // Manually adjust since stopping doesn't trigger the delegate
+        for _ in 0..<count {
+            endDucking()
+        }
     }
     
     /// Play sound effect
@@ -99,14 +111,12 @@ class AudioManager: NSObject, ObservableObject {
     func playSound(_ sound: SoundEffect) {
         guard isEnabled && soundEnabled else { return }
         guard Bundle.main.url(forResource: sound.filename, withExtension: "mp3") != nil else {
-            // Sound assets are optional. Voice announcements continue to work without them.
             return
         }
 
-        configureAudioSession()
+        // Temporarily duck other audio while playing
+        beginDucking()
 
-        // Timer events may overlap, but the settings preview deliberately plays
-        // one selected sound at a time.
         loadAndPlaySound(sound)
     }
 
@@ -126,6 +136,21 @@ class AudioManager: NSObject, ObservableObject {
             synthesizer.stopSpeaking(at: .immediate)
             synthesizer = AVSpeechSynthesizer()
             configureSynthesizer()
+        }
+    }
+
+    /// Pre-switch the audio session to ducking mode without starting a sound.
+    /// Call ~1 s before the first countdown number so the expensive
+    /// `setCategory` / `setActive` switch is already done.
+    /// 預先切換到 duck 模式，在第一個倒數數字前約 1 秒呼叫，讓昂貴的
+    /// audio session 切換提前完成。
+    func preDuck() {
+        guard activeSoundCount == 0 else { return } // already ducking
+        beginDucking()
+        // Schedule un-duck after a short window in case no sound actually fires
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            guard let self, self.activeSoundCount == 1 else { return }
+            self.endDucking()
         }
     }
 
@@ -153,7 +178,9 @@ class AudioManager: NSObject, ObservableObject {
             player.play()
             silentPlayer = player
         } catch {
+            #if DEBUG
             print("Failed to start background audio loop: \(error)")
+            #endif
         }
     }
 
@@ -200,14 +227,34 @@ class AudioManager: NSObject, ObservableObject {
     
     // MARK: - Private Methods
     
-    /// Configure audio session for background playback
-    /// 配置音訊會話以支援背景播放
+    /// Configure audio session in normal (non-ducking) mode.
+    /// Uses `.mixWithOthers` so other apps' audio plays at full volume.
+    /// 配置音訊會話為正常模式，不影響其他 app 的音量。
     private func configureAudioSession() {
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            // Use `.playback` without `.mixWithOthers` so that iOS treats this
-            // as primary audio and keeps the app alive in the background.
-            // `.duckOthers` lowers other audio (e.g. music) instead of stopping it.
+            try audioSession.setCategory(
+                .playback,
+                mode: .default,
+                options: [.mixWithOthers]
+            )
+            try audioSession.setActive(true, options: [])
+        } catch {
+            #if DEBUG
+            print("Failed to configure audio session: \(error)")
+            #endif
+        }
+    }
+    
+    /// Temporarily switch to ducking mode — lowers other apps' audio while
+    /// our sound effect or voice is playing.
+    /// 暫時切換到 duck 模式 — 在我們的音效或語音播放期間壓低其他 app 音量。
+    private func beginDucking() {
+        activeSoundCount += 1
+        // Only switch category if this is the first active sound
+        guard activeSoundCount == 1 else { return }
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
             try audioSession.setCategory(
                 .playback,
                 mode: .default,
@@ -215,7 +262,35 @@ class AudioManager: NSObject, ObservableObject {
             )
             try audioSession.setActive(true, options: [])
         } catch {
-            print("Failed to configure audio session: \(error)")
+            #if DEBUG
+            print("Failed to begin ducking: \(error)")
+            #endif
+        }
+    }
+    
+    /// Called when a sound effect or speech utterance finishes. When no more
+    /// active sounds remain, switch back to normal (non-ducking) mode so
+    /// other apps' audio returns to full volume.
+    /// 當音效或語音結束時呼叫。當沒有活躍的聲音時，切回正常模式讓其他 app 音量恢復。
+    private func endDucking() {
+        activeSoundCount = max(0, activeSoundCount - 1)
+        guard activeSoundCount == 0 else { return }
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            // Deactivate with .notifyOthersOnDeactivation so the ducked apps
+            // know they can restore their volume.
+            try audioSession.setActive(false, options: [.notifyOthersOnDeactivation])
+            // Re-activate in mix mode (needed for the silent keep-alive loop)
+            try audioSession.setCategory(
+                .playback,
+                mode: .default,
+                options: [.mixWithOthers]
+            )
+            try audioSession.setActive(true, options: [])
+        } catch {
+            #if DEBUG
+            print("Failed to end ducking: \(error)")
+            #endif
         }
     }
 
@@ -269,10 +344,14 @@ class AudioManager: NSObject, ObservableObject {
 
             if !player.play() {
                 audioPlayers.removeValue(forKey: identifier)
+                #if DEBUG
                 print("Failed to start sound: \(sound.filename)")
+                #endif
             }
         } catch {
+            #if DEBUG
             print("Failed to load sound: \(error)")
+            #endif
         }
     }
     
@@ -331,11 +410,11 @@ extension AudioManager: AVSpeechSynthesizerDelegate {
     }
     
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-        // Speech finished
+        endDucking()
     }
     
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
-        // Speech cancelled
+        endDucking()
     }
 }
 
@@ -344,6 +423,7 @@ extension AudioManager: AVSpeechSynthesizerDelegate {
 extension AudioManager: AVAudioPlayerDelegate {
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         audioPlayers = audioPlayers.filter { $0.value !== player }
+        endDucking()
     }
 }
 
@@ -401,7 +481,9 @@ extension AudioManager {
                 // Validate the asset at launch. Playback creates a fresh player.
                 _ = player
             } catch {
+                #if DEBUG
                 print("Failed to preload sound \(sound.filename): \(error)")
+                #endif
             }
         }
     }

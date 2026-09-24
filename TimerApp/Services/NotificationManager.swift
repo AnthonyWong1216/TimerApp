@@ -53,7 +53,9 @@ class NotificationManager: NSObject, ObservableObject {
             
             return granted
         } catch {
+            #if DEBUG
             print("Failed to request notification authorization: \(error)")
+            #endif
             return false
         }
     }
@@ -97,7 +99,9 @@ class NotificationManager: NSObject, ObservableObject {
         
         notificationCenter.add(request) { error in
             if let error = error {
+                #if DEBUG
                 print("Failed to schedule stage notification: \(error)")
+                #endif
             }
         }
     }
@@ -122,7 +126,9 @@ class NotificationManager: NSObject, ObservableObject {
         )
         notificationCenter.add(request) { error in
             if let error {
+                #if DEBUG
                 print("Failed to schedule timer event: \(error)")
+                #endif
             }
         }
     }
@@ -151,7 +157,9 @@ class NotificationManager: NSObject, ObservableObject {
         
         notificationCenter.add(request) { error in
             if let error = error {
+                #if DEBUG
                 print("Failed to show completion notification: \(error)")
+                #endif
             }
         }
     }

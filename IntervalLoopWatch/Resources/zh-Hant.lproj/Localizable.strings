@@ -1,0 +1,12 @@
+/*
+  Localizable.strings (Traditional Chinese)
+  IntervalLoopWatch
+
+  Watch companion for IntervalLoop.
+*/
+
+// MARK: - Watch Timer View
+"watch.pause" = "暫停";
+"watch.continue" = "繼續";
+"watch.stop" = "停止";
+"watch.start_on_iphone" = "在 iPhone 上開始訓練";

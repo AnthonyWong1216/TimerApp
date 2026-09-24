@@ -34,7 +34,12 @@ struct WatchTimerView: View {
                     Button {
                         timerStore.send(timer.isRunning ? "pause" : "resume")
                     } label: {
-                        Label(timer.isRunning ? "Pause" : "Continue", systemImage: timer.isRunning ? "pause.fill" : "play.fill")
+                        Label(
+                            timer.isRunning
+                                ? NSLocalizedString("watch.pause", comment: "Pause")
+                                : NSLocalizedString("watch.continue", comment: "Continue"),
+                            systemImage: timer.isRunning ? "pause.fill" : "play.fill"
+                        )
                     }
                     .tint(timer.isRunning ? .orange : .green)
 
@@ -53,14 +58,17 @@ struct WatchTimerView: View {
                     Button(role: .destructive) {
                         timerStore.send("stop")
                     } label: {
-                        Label("Stop", systemImage: "stop.fill")
+                        Label(
+                            NSLocalizedString("watch.stop", comment: "Stop"),
+                            systemImage: "stop.fill"
+                        )
                     }
                     .buttonStyle(.bordered)
                 } else {
                     Image(systemName: "iphone.and.arrow.forward")
                         .font(.title2)
                         .foregroundStyle(.secondary)
-                    Text("Start a routine on iPhone")
+                    Text(NSLocalizedString("watch.start_on_iphone", comment: "Start a routine on iPhone"))
                         .font(.caption)
                         .multilineTextAlignment(.center)
                 }

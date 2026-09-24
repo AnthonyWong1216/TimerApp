@@ -11,13 +11,13 @@ import SwiftUI
 /// 應用配置的設定視圖
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var audioManager = AudioManager.shared
-    @StateObject private var notificationManager = NotificationManager.shared
+    @ObservedObject private var audioManager = AudioManager.shared
+    @ObservedObject private var notificationManager = NotificationManager.shared
     
     @AppStorage("keepScreenOn") private var keepScreenOn = true
     @AppStorage("useDarkMode") private var useDarkMode = true
     @AppStorage("timerNumberFont") private var timerNumberFont = TimerNumberFont.rounded.rawValue
-    @AppStorage("timerProgressStyle") private var timerProgressStyle = TimerProgressStyle.circle.rawValue
+    @AppStorage("timerTheme") private var timerTheme = TimerTheme.classic.rawValue
     @AppStorage("countdownAnnouncement") private var countdownAnnouncement = CountdownAnnouncement.three.rawValue
     
     var body: some View {
@@ -98,15 +98,15 @@ struct SettingsView: View {
                         isOn: $keepScreenOn
                     )
 
-                    Picker(NSLocalizedString("settings.timer_font", comment: "Timer Font"), selection: $timerNumberFont) {
-                        ForEach(TimerNumberFont.allCases) { font in
-                            Text(font.localizedName).tag(font.rawValue)
+                    Picker(NSLocalizedString("settings.timer_theme", comment: "Timer Theme"), selection: $timerTheme) {
+                        ForEach(TimerTheme.allCases) { theme in
+                            Label(theme.localizedName, systemImage: theme.iconName).tag(theme.rawValue)
                         }
                     }
 
-                    Picker(NSLocalizedString("settings.timer_progress", comment: "Countdown Style"), selection: $timerProgressStyle) {
-                        ForEach(TimerProgressStyle.allCases) { style in
-                            Text(style.localizedName).tag(style.rawValue)
+                    Picker(NSLocalizedString("settings.timer_font", comment: "Timer Font"), selection: $timerNumberFont) {
+                        ForEach(TimerNumberFont.allCases) { font in
+                            Text(font.localizedName).tag(font.rawValue)
                         }
                     }
 

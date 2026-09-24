@@ -22,7 +22,6 @@ enum TimerState: String, Codable {
 class TimerSession: ObservableObject {
     // MARK: - Published Properties
     @Published var state: TimerState = .idle
-    @Published var currentRound: Int = 1
     @Published var currentStageIndex: Int = 0
     @Published var timeRemaining: TimeInterval = 0
     @Published var totalElapsed: TimeInterval = 0
@@ -73,11 +72,6 @@ class TimerSession: ObservableObject {
         globalStageIndex >= configuration.totalStages - 1
     }
     
-    /// Check if this is the last round
-    /// 檢查是否為最後一輪
-    var isLastRound: Bool {
-        currentRound >= configuration.rounds
-    }
     
     /// Formatted time remaining (MM:SS)
     /// 格式化的剩餘時間（MM:SS）
@@ -173,15 +167,27 @@ class TimerSession: ObservableObject {
     func skipStage() {
         guard state == .running || state == .paused else { return }
         
+        // Add the skipped time to totalElapsed so overallProgress stays accurate.
+        // 將跳過的時間加到 totalElapsed，讓 overallProgress 保持準確。
+        totalElapsed += timeRemaining
+
         advanceToNextStage()
     }
 
     /// Return to the previous stage and restart its duration.
+    /// 回到上一個階段並重新開始其計時。
     func previousStage() {
         guard (state == .running || state == .paused), currentStageIndex > 0 else { return }
 
+        // Subtract the elapsed portion of the current stage from totalElapsed,
+        // then subtract the full duration of the previous stage we are rewinding to.
+        // 從 totalElapsed 減去當前 stage 已消耗的部分，再減去要回退的 stage 的完整時長。
+        let currentStageDuration = currentStage?.duration ?? 0
+        let elapsedInCurrentStage = currentStageDuration - timeRemaining
         currentStageIndex -= 1
-        timeRemaining = currentStage?.duration ?? 0
+        let previousStageDuration = currentStage?.duration ?? 0
+        totalElapsed = max(0, totalElapsed - elapsedInCurrentStage - previousStageDuration)
+        timeRemaining = previousStageDuration
     }
     
     /// Update timer (called every tick)
@@ -231,7 +237,7 @@ class TimerSession: ObservableObject {
         SessionState(
             configurationId: configuration.id,
             state: state,
-            currentRound: currentRound,
+            currentRound: 1,  // Legacy field, kept for backward compatibility
             currentStageIndex: currentStageIndex,
             timeRemaining: timeRemaining,
             totalElapsed: totalElapsed,
@@ -246,7 +252,6 @@ class TimerSession: ObservableObject {
         guard sessionState.configurationId == configuration.id else { return }
         
         self.state = sessionState.state
-        self.currentRound = sessionState.currentRound
         self.currentStageIndex = sessionState.currentStageIndex
         self.timeRemaining = sessionState.timeRemaining
         self.totalElapsed = sessionState.totalElapsed

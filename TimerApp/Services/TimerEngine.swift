@@ -92,6 +92,7 @@ class TimerEngine: ObservableObject {
     /// 暫停當前訓練
     func pause() {
         guard let session = session, session.state == .running else { return }
+        triggerButtonHaptic()
         
         session.pause()
         stopTimer()
@@ -105,6 +106,7 @@ class TimerEngine: ObservableObject {
     /// 恢復暫停的訓練
     func resume() {
         guard let session = session, session.state == .paused else { return }
+        triggerButtonHaptic()
         
         session.resume()
         audioManager.startBackgroundAudio()
@@ -116,6 +118,7 @@ class TimerEngine: ObservableObject {
     /// Stop the current workout
     /// 停止當前訓練
     func stop() {
+        triggerButtonHaptic()
         stopTimer()
         session?.stop()
         session = nil
@@ -133,6 +136,7 @@ class TimerEngine: ObservableObject {
     /// 跳到下一個階段
     func skipStage() {
         guard let session = session else { return }
+        triggerButtonHaptic()
         
         session.skipStage()
         
@@ -147,6 +151,7 @@ class TimerEngine: ObservableObject {
     /// Return to the previous stage and restart it.
     func previousStage() {
         guard let session else { return }
+        triggerButtonHaptic()
 
         session.previousStage()
         announceStageStart()
@@ -267,19 +272,31 @@ class TimerEngine: ObservableObject {
 
         let countdownStart = UserDefaults.standard.integer(forKey: "countdownAnnouncement")
         let countdownDuration = countdownStart == 0 ? 3 : countdownStart
+        
+        // Pre-duck 1 second before the countdown begins so the audio session
+        // is already switched when the first number fires — avoids the
+        // ~50 ms setup delay that makes "5" and "4" sound too close together.
+        // 在倒數開始前 1 秒預先 duck，讓 audio session 提前切換完成，
+        // 避免第一個數字的 ~50ms 延遲導致「5」和「4」聽起來間距太短。
+        let preDuckThreshold = Double(countdownDuration) + 1.0
+        if previousTime > preDuckThreshold && currentTime <= preDuckThreshold {
+            audioManager.preDuck()
+        }
+        
         // Announce the selected final countdown, e.g. 3, 2, 1.
         for count in 1...countdownDuration {
             let threshold = Double(count)
             if previousTime > threshold && currentTime <= threshold {
                 audioManager.speak("\(count)")
                 audioManager.playSound(.countdown)
+                triggerCountdownHaptic()
                 break
             }
         }
     }
     
-    /// Announce stage start
-    /// 提示階段開始
+    /// Announce stage start — speak only the stage type (Workout / Rest / Prepare)
+    /// 提示階段開始 — 只讀出階段類型（訓練 / 休息 / 準備）
     private func announceStageStart() {
         guard let session = session,
               let stage = session.currentStage else { return }
@@ -287,15 +304,15 @@ class TimerEngine: ObservableObject {
         // Play transition sound
         audioManager.playSound(.stageTransition)
         
-        // Announce stage type
-        audioManager.speak(stage.type.localizedName)
+        // Haptic feedback for stage change
+        triggerStageTransitionHaptic()
         
-        // Announce stage name after its type without interrupting the first utterance.
-        if stage.name != stage.type.localizedName {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                self?.audioManager.speak(stage.name)
-            }
-        }
+        // Speak the stage type in the language matching the TTS voice.
+        // Uses spokenName(for:) instead of localizedName to ensure the text
+        // always matches the TTS engine's language (English voice → English text).
+        // 用 spokenName 而非 localizedName，確保文字語言與 TTS 引擎一致。
+        let lang = audioManager.getCurrentLanguage()
+        audioManager.speak(stage.type.spokenName(for: lang))
     }
     
     /// Handle workout completion
@@ -419,6 +436,27 @@ class TimerEngine: ObservableObject {
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
     }
+
+    /// Trigger haptic feedback for stage transitions
+    /// 觸發階段切換的觸覺回饋
+    private func triggerStageTransitionHaptic() {
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+    }
+
+    /// Trigger haptic feedback for countdown ticks (3, 2, 1)
+    /// 觸發倒數嘀嗒的觸覺回饋
+    private func triggerCountdownHaptic() {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+    }
+
+    /// Trigger haptic feedback for control button presses
+    /// 觸發控制按鈕的觸覺回饋
+    private func triggerButtonHaptic() {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+    }
     
     // MARK: - Background Execution
     
@@ -503,6 +541,13 @@ class TimerEngine: ObservableObject {
     /// 處理應用已變為活動狀態
     private func handleAppDidBecomeActive() {
         notificationManager.cancelAll()
+        
+        // Clear any queued speech/sounds that accumulated while in background,
+        // so they don't all play back at once.
+        // 清除背景期間積存的語音/音效佇列，避免回來時一次全部播出。
+        audioManager.stopSpeaking()
+        audioManager.stopSounds()
+        
         audioManager.resumeAfterAppBecomesActive()
         
         // Fast-forward the session by the real elapsed time while in background.

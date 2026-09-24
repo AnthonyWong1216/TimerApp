@@ -17,7 +17,9 @@ final class WatchConnectivityManager: NSObject {
         session.delegate = self
         session.activate()
         self.session = session
+        #if DEBUG
         print("[iPhone] WatchConnectivityManager initialized, WCSession activating…")
+        #endif
     }
 
     func publish(session timerSession: TimerSession?) {
@@ -26,9 +28,13 @@ final class WatchConnectivityManager: NSObject {
         do {
             let context = makeContext(for: timerSession)
             try session.updateApplicationContext(context)
+            #if DEBUG
             print("[iPhone] Published context to Watch: isRunning=\(context["isRunning"] ?? "nil"), stageName=\(context["stageName"] ?? "nil")")
+            #endif
         } catch {
+            #if DEBUG
             print("Unable to update Apple Watch timer state: \(error.localizedDescription)")
+            #endif
         }
     }
 
@@ -67,19 +73,27 @@ enum WatchCommand: String {
 extension WatchConnectivityManager: WCSessionDelegate {
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
         if let error {
+            #if DEBUG
             print("[iPhone] WCSession activation failed: \(error.localizedDescription)")
+            #endif
         } else {
+            #if DEBUG
             print("[iPhone] WCSession activated. isPaired=\(session.isPaired), isWatchAppInstalled=\(session.isWatchAppInstalled)")
+            #endif
         }
     }
     func sessionDidBecomeInactive(_ session: WCSession) { }
     func sessionDidDeactivate(_ session: WCSession) { session.activate() }
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+        #if DEBUG
         print("[iPhone] didReceiveMessage: \(message)")
+        #endif
         receiveCommand(from: message)
     }
     func session(_ session: WCSession, didReceiveMessage message: [String: Any], replyHandler: @escaping ([String: Any]) -> Void) {
+        #if DEBUG
         print("[iPhone] didReceiveMessage (with reply): \(message)")
+        #endif
         receiveCommand(from: message)
         replyHandler([:])
     }

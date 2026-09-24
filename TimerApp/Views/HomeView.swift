@@ -16,8 +16,8 @@ struct HomeView: View {
     }
 
     @StateObject private var timerEngine = TimerEngine()
-    @StateObject private var audioManager = AudioManager.shared
-    @StateObject private var notificationManager = NotificationManager.shared
+    @ObservedObject private var audioManager = AudioManager.shared
+    @ObservedObject private var notificationManager = NotificationManager.shared
     
     @State private var configurations: [WorkoutConfiguration] = []
     @State private var showingTimerView = false
@@ -196,7 +196,8 @@ struct HomeView: View {
                         onMoveUp: { moveConfiguration(config, by: -1) },
                         onMoveDown: { moveConfiguration(config, by: 1) },
                         canMoveUp: configurations.first?.id != config.id,
-                        canMoveDown: configurations.last?.id != config.id
+                        canMoveDown: configurations.last?.id != config.id,
+                        onDelete: { routineToDelete = config }
                     )
                     .contextMenu {
                         Button {
@@ -302,6 +303,7 @@ struct WorkoutCard: View {
     let onMoveDown: () -> Void
     let canMoveUp: Bool
     let canMoveDown: Bool
+    var onDelete: (() -> Void)? = nil
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -351,9 +353,9 @@ struct WorkoutCard: View {
                 // Play button to start routine
                 Button(action: onTap) {
                     Image(systemName: "play.circle.fill")
-                        .font(.title2)
+                        .font(.largeTitle)
                         .foregroundStyle(.green)
-                        .frame(width: 44, height: 44)
+                        .frame(width: 56, height: 56)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.borderless)
@@ -381,6 +383,17 @@ struct WorkoutCard: View {
                 }
 
                 Spacer()
+
+                if let onDelete {
+                    Button(action: onDelete) {
+                        Image(systemName: "trash.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.red.opacity(0.8))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.borderless)
+                }
             }
         }
         .padding()

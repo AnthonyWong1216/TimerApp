@@ -56,6 +56,7 @@
 "timer.font.monospaced" = "Monospaced";
 "timer.font.serif" = "Serif";
 "timer.font.cyber" = "Cyber";
+"timer.font.sevenSegment" = "7-Segment LED";
 "timer.progress.circle" = "Circle";
 "timer.progress.bar" = "Progress Bar";
 "timer.stop_title" = "Stop workout?";
@@ -136,8 +137,15 @@
 "settings.keep_screen_on" = "Keep Screen On";
 "settings.dark_mode" = "Dark Mode";
 "settings.timer_font" = "Timer Number Font";
-"settings.timer_progress" = "Countdown Style";
+"settings.timer_theme" = "Timer Theme";
 "settings.countdown" = "Final Countdown";
+
+// MARK: - Timer Themes
+"timer.theme.classic" = "Classic Ring";
+"timer.theme.fullscreen" = "Full Screen";
+"timer.theme.timeline" = "Timeline";
+"timer.theme.cyberpunk" = "Cyberpunk";
+"timer.theme.hourglass" = "Hourglass";
 "settings.countdown_option" = "%d seconds";
 "settings.display_footer" = "Prevent screen from dimming during workout";
 "settings.notifications_header" = "Notifications";

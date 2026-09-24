@@ -514,7 +514,7 @@ struct StageEditorView: View {
     let onSave: (TimerStage) -> Void
     
     @State private var name: String = ""
-    @State private var duration: TimeInterval = 0
+    @State private var duration: TimeInterval = 30
     @State private var type: StageType = .workout
     @State private var colorTheme: StageColor = .red
     
@@ -670,7 +670,7 @@ struct StageEditorView: View {
                     Button(NSLocalizedString("stage.save", comment: "Save")) {
                         saveStage()
                     }
-                    .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || duration <= 0)
+                    .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || duration < 1)
                 }
             }
             .onAppear {

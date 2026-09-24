@@ -56,6 +56,7 @@
 "timer.font.monospaced" = "等寬字體";
 "timer.font.serif" = "襯線字體";
 "timer.font.cyber" = "Cyber 科幻";
+"timer.font.sevenSegment" = "七段 LED";
 "timer.progress.circle" = "圓形";
 "timer.progress.bar" = "進度條";
 "timer.stop_title" = "停止訓練？";
@@ -136,8 +137,15 @@
 "settings.keep_screen_on" = "保持螢幕開啟";
 "settings.dark_mode" = "深色模式";
 "settings.timer_font" = "計時數字字體";
-"settings.timer_progress" = "倒數樣式";
+"settings.timer_theme" = "計時器風格";
 "settings.countdown" = "最後倒數";
+
+// MARK: - Timer Themes
+"timer.theme.classic" = "經典圓環";
+"timer.theme.fullscreen" = "全屏沉浸";
+"timer.theme.timeline" = "時間軸";
+"timer.theme.cyberpunk" = "賽博朋克";
+"timer.theme.hourglass" = "沙漏";
 "settings.countdown_option" = "%d 秒";
 "settings.display_footer" = "訓練期間防止螢幕變暗";
 "settings.notifications_header" = "通知";

@@ -85,6 +85,27 @@ enum StageType: String, Codable, CaseIterable, Hashable {
             return "clock.fill"
         }
     }
+    
+    /// Text suitable for speech synthesis in the given language.
+    /// Unlike `localizedName` (which follows the iOS system locale),
+    /// this always returns text the TTS engine for `language` can pronounce.
+    /// 根據指定語言返回 TTS 能正確發音的文字。
+    func spokenName(for language: Language) -> String {
+        switch language {
+        case .english:
+            switch self {
+            case .workout: return "Workout"
+            case .rest:    return "Rest"
+            case .prepare: return "Prepare"
+            }
+        case .traditionalChinese:
+            switch self {
+            case .workout: return "訓練"
+            case .rest:    return "休息"
+            case .prepare: return "準備"
+            }
+        }
+    }
 }
 
 /// Stage color theme

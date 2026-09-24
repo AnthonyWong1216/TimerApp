@@ -1,0 +1,12 @@
+/*
+  Localizable.strings (English)
+  IntervalLoopWatch
+
+  Watch companion for IntervalLoop.
+*/
+
+// MARK: - Watch Timer View
+"watch.pause" = "Pause";
+"watch.continue" = "Continue";
+"watch.stop" = "Stop";
+"watch.start_on_iphone" = "Start a routine on iPhone";

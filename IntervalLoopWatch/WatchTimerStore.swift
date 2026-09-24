@@ -66,31 +66,43 @@ final class WatchTimerStore: NSObject, ObservableObject {
 extension WatchTimerStore: WCSessionDelegate {
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
         if let error {
+            #if DEBUG
             print("[Watch] WCSession activation failed: \(error.localizedDescription)")
+            #endif
             return
         }
         guard activationState == .activated else {
+            #if DEBUG
             print("[Watch] WCSession not activated, state: \(activationState.rawValue)")
+            #endif
             return
         }
+        #if DEBUG
         print("[Watch] WCSession activated. receivedApplicationContext keys: \(session.receivedApplicationContext.keys.sorted())")
+        #endif
         if !session.receivedApplicationContext.isEmpty {
             apply(session.receivedApplicationContext)
         }
     }
 
     func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
+        #if DEBUG
         print("[Watch] didReceiveApplicationContext: \(applicationContext)")
+        #endif
         apply(applicationContext)
     }
 
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
+        #if DEBUG
         print("[Watch] didReceiveUserInfo: \(userInfo)")
+        #endif
         apply(userInfo)
     }
 
     func session(_ session: WCSession, didReceiveMessage message: [String: Any], replyHandler: @escaping ([String: Any]) -> Void) {
+        #if DEBUG
         print("[Watch] didReceiveMessage (with reply): \(message)")
+        #endif
         apply(message)
         replyHandler([:])
     }
